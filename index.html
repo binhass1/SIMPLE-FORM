@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Product Form</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="form-card">
+      <h1>Business Product Form</h1>
+      <p class="subtitle">Add your product details below</p>
+
+      <form id="productForm">
+        <div class="form-group">
+          <label for="name">Business / Seller Name</label>
+          <input type="text" id="name" placeholder="Enter your name or business name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="product">Product Name</label>
+          <input type="text" id="product" placeholder="Enter product name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="price">Price</label>
+          <input type="number" id="price" placeholder="Enter price" step="0.01" required />
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" rows="5" placeholder="Enter product description" required></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn">Save Product</button>
+      </form>
+
+      <p id="message"></p>
+    </div>
+  </div>
+
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
+</body>
+</html>
