@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products</title>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f5f7fb;
+      color: #222;
+      padding: 30px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .header {
+      margin-bottom: 25px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 15px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .refresh-btn {
+      background: #111827;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s ease;
+    }
+
+    .refresh-btn:hover {
+      opacity: 0.9;
+    }
+
+    .status {
+      margin-bottom: 20px;
+      font-size: 15px;
+      color: #444;
+    }
+
+    .error {
+      color: #c62828;
+      background: #fdecea;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .empty {
+      background: white;
+      border-radius: 14px;
+      padding: 30px;
+      text-align: center;
+      color: #666;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+      display: none;
+    }
+
+    /* Desktop table */
+    .table-wrapper {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      display: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #111827;
+      color: white;
+    }
+
+    th, td {
+      padding: 16px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    th {
+      font-weight: 600;
+    }
+
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .price {
+      font-weight: bold;
+      color: #0f766e;
+    }
+
+    /* Mobile cards */
+    .cards {
+      display: none;
+      gap: 16px;
+      flex-direction: column;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+
+    .card h3 {
+      margin-bottom: 12px;
+      font-size: 20px;
+      color: #111827;
+    }
+
+    .card p {
+      margin-bottom: 8px;
+      color: #444;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .label {
+      font-weight: bold;
+      color: #111827;
+    }
+
+    @media (max-width: 768px) {
+      .table-wrapper {
+        display: none !important;
+      }
+
+      .cards.show {
+        display: flex;
+      }
+    }
+
+    @media (min-width: 769px) {
+      .cards {
+        display: none !important;
+      }
+
+      .table-wrapper.show {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Products</h1>
+      <p>All submitted products from the database</p>
+    </div>
+
+    <div class="top-bar">
+      <button class="refresh-btn" id="refreshBtn">Refresh</button>
+    </div>
+
+    <div class="status" id="status">Loading products...</div>
+    <div class="error" id="errorBox"></div>
+    <div class="empty" id="emptyState">No products found.</div>
+
+    <!-- Desktop Table -->
+    <div class="table-wrapper" id="tableWrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Product</th>
+            <th>Price</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody id="productsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Cards -->
+    <div class="cards" id="productsCards"></div>
+  </div>
+
+  <script>
+    // ============================
+    // 1. REPLACE THESE WITH YOUR SUPABASE DETAILS
+    // ============================
+    const SUPABASE_URL = "https://gclunxqkrvhoduhouqqh.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjbHVueHFrcnZob2R1aG91cXFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDcxMjQsImV4cCI6MjA5Nzg4MzEyNH0.MH7mPS5bO12NgScg36ct5Qbk5XNfdGfDFHvGKg94xYI";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const statusEl = document.getElementById("status");
+    const errorBox = document.getElementById("errorBox");
+    const emptyState = document.getElementById("emptyState");
+    const tableWrapper = document.getElementById("tableWrapper");
+    const tableBody = document.getElementById("productsTableBody");
+    const cardsContainer = document.getElementById("productsCards");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    async function fetchProducts() {
+      // Reset UI
+      statusEl.style.display = "block";
+      statusEl.textContent = "Loading products...";
+      errorBox.style.display = "none";
+      emptyState.style.display = "none";
+      tableWrapper.classList.remove("show");
+      cardsContainer.classList.remove("show");
+      tableBody.innerHTML = "";
+      cardsContainer.innerHTML = "";
+
+      try {
+        // Fetch all rows from products table
+        const { data, error } = await supabaseClient
+          .from("products")
+          .select("*");
+
+        if (error) {
+          throw error;
+        }
+
+        statusEl.style.display = "none";
+
+        if (!data || data.length === 0) {
+          emptyState.style.display = "block";
+          return;
+        }
+
+        renderProducts(data);
+      } catch (err) {
+        statusEl.style.display = "none";
+        errorBox.style.display = "block";
+        errorBox.textContent = "Failed to load products. " + (err.message || "");
+        console.error("Error fetching products:", err);
+      }
+    }
+
+    function renderProducts(products) {
+      // Show correct layout depending on screen size
+      if (window.innerWidth <= 768) {
+        cardsContainer.classList.add("show");
+      } else {
+        tableWrapper.classList.add("show");
+      }
+
+      products.forEach((item) => {
+        const name = item.name ?? "—";
+        const product = item.product ?? "—";
+        const price = item.price ?? "—";
+        const description = item.description ?? "—";
+
+        // TABLE ROW
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${escapeHTML(name)}</td>
+          <td>${escapeHTML(product)}</td>
+          <td class="price">${escapeHTML(String(price))}</td>
+          <td>${escapeHTML(description)}</td>
+        `;
+        tableBody.appendChild(row);
+
+        // MOBILE CARD
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>${escapeHTML(name)}</h3>
+          <p><span class="label">Product:</span> ${escapeHTML(product)}</p>
+          <p><span class="label">Price:</span> ${escapeHTML(String(price))}</p>
+          <p><span class="label">Description:</span> ${escapeHTML(description)}</p>
+        `;
+        cardsContainer.appendChild(card);
+      });
+    }
+
+    function escapeHTML(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    refreshBtn.addEventListener("click", fetchProducts);
+
+    // Re-render layout visibility when screen size changes
+    window.addEventListener("resize", () => {
+      if (tableBody.children.length > 0 || cardsContainer.children.length > 0) {
+        if (window.innerWidth <= 768) {
+          tableWrapper.classList.remove("show");
+          cardsContainer.classList.add("show");
+        } else {
+          cardsContainer.classList.remove("show");
+          tableWrapper.classList.add("show");
+        }
+      }
+    });
+
+    // Initial load
+    fetchProducts();
+  </script>
+</body>
+</html>
