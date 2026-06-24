@@ -1,16 +1,12 @@
-// 1. Replace these with your real Supabase project details
 const SUPABASE_URL = "https://gclunxqkrvhoduhouqqh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjbHVueHFrcnZob2R1aG91cXFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDcxMjQsImV4cCI6MjA5Nzg4MzEyNH0.MH7mPS5bO12NgScg36ct5Qbk5XNfdGfDFHvGKg94xYI";
 
-// 2. Create Supabase client
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 3. Get form elements
 const form = document.getElementById("productForm");
 const message = document.getElementById("message");
 const submitBtn = document.getElementById("submitBtn");
 
-// 4. Handle form submit
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -19,8 +15,9 @@ form.addEventListener("submit", async (e) => {
   const price = parseFloat(document.getElementById("price").value);
   const description = document.getElementById("description").value.trim();
 
-  if (!name || !product || !price || !description) {
-    message.textContent = "Please fill in all fields.";
+  // Better validation
+  if (!name || !product || isNaN(price) || !description) {
+    message.textContent = "Please fill in all fields correctly.";
     message.style.color = "red";
     return;
   }
@@ -33,10 +30,10 @@ form.addEventListener("submit", async (e) => {
       .from("products")
       .insert([
         {
-          name: name,
-          product: product,
-          price: price,
-          description: description
+          name,
+          product,
+          price,
+          description
         }
       ]);
 
@@ -46,7 +43,7 @@ form.addEventListener("submit", async (e) => {
     message.style.color = "green";
     form.reset();
   } catch (err) {
-    console.error(err);
+    console.error("Supabase insert error:", err);
     message.textContent = "Error saving product: " + err.message;
     message.style.color = "red";
   } finally {
